@@ -500,23 +500,46 @@
 </footer>
 
 <script>
-  // Remplace cette URL par ton endpoint Google Form / Sheet / autre service de capture email.
-  // Pour l'instant : stocke localement en mémoire de session + log console (à connecter ensuite).
+  // Webhook Make.com — reçoit l'email puis le relaie vers Telegram (token caché côté Make, jamais ici).
+  var WEBHOOK_URL = 'https://hook.eu1.make.com/z59coqhjpvlsvku0j2f37xdvp7jamk3a';
+
   function handleSubmit(formId, inputId, successId){
     var form = document.getElementById(formId);
     form.addEventListener('submit', function(e){
       e.preventDefault();
       var input = document.getElementById(inputId);
       var success = document.getElementById(successId);
+      var button = form.querySelector('button[type="submit"]');
       var email = input.value.trim();
       if(!email) return;
 
-      // TODO: remplacer par un vrai envoi (Google Form action URL, ou autre webhook)
-      console.log('Nouvelle inscription liste d\'attente:', email);
+      var originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = 'Envoi...';
 
-      input.value = '';
-      success.classList.add('show');
-      setTimeout(function(){ success.classList.remove('show'); }, 4000);
+      fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          source: 'snapcase-landing',
+          page: window.location.href,
+          timestamp: new Date().toISOString()
+        })
+      })
+      .then(function(){
+        input.value = '';
+        success.classList.add('show');
+        setTimeout(function(){ success.classList.remove('show'); }, 4000);
+      })
+      .catch(function(err){
+        console.error('Erreur envoi inscription:', err);
+        alert('Une erreur est survenue. Réessaie dans un instant.');
+      })
+      .finally(function(){
+        button.disabled = false;
+        button.textContent = originalLabel;
+      });
     });
   }
 
